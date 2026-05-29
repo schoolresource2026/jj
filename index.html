@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>교육자원 효율 진단 플랫폼</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <p class="badge">교육 공공데이터 기반 분석</p>
+        <h1>교육자원 비효율 진단 및 개선 시나리오 추천 플랫폼</h1>
+        <p class="sub">
+            코랩에서 산출한 교육자원 효율 점수 데이터를 기준으로,
+            입력한 학교·지역의 에너지, 공간, 운영 구조 비효율을 진단합니다.
+        </p>
+    </header>
+
+    <section class="card">
+        <h2>1. 기준 지역 선택 및 데이터 입력</h2>
+
+        <form method="POST">
+            <div class="top-form">
+                <div>
+                    <label>기준 지역 선택</label>
+                    <select name="region_id">
+                        {% for region in region_options %}
+                            <option value="{{ region }}" {% if region == selected_id %}selected{% endif %}>
+                                {{ region }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label>개선 시나리오 적용 비율(%)</label>
+                    <input type="number" name="rate" value="{{ result.rate }}" min="1" max="50" step="1">
+                </div>
+            </div>
+
+            <div class="button-row">
+                <button type="submit" name="action" value="load" class="secondary-btn">
+                    선택 지역 값 불러오기
+                </button>
+            </div>
+
+            <div class="form-grid">
+                <div>
+                    <label>학생 수</label>
+                    <input type="number" name="students" value="{{ form_values.students }}" step="any">
+                </div>
+
+                <div>
+                    <label>학급 수</label>
+                    <input type="number" name="classes" value="{{ form_values.classes }}" step="any">
+                </div>
+
+                <div>
+                    <label>교원 수</label>
+                    <input type="number" name="teachers" value="{{ form_values.teachers }}" step="any">
+                </div>
+
+                <div>
+                    <label>학교용지 면적</label>
+                    <input type="number" name="land_area" value="{{ form_values.land_area }}" step="any">
+                </div>
+
+                <div>
+                    <label>교지 면적</label>
+                    <input type="number" name="site_area" value="{{ form_values.site_area }}" step="any">
+                </div>
+
+                <div>
+                    <label>교사 면적</label>
+                    <input type="number" name="building_area" value="{{ form_values.building_area }}" step="any">
+                </div>
+
+                <div>
+                    <label>냉난방 면적</label>
+                    <input type="number" name="cooling_area" value="{{ form_values.cooling_area }}" step="any">
+                </div>
+
+                <div>
+                    <label>전기 총사용량(kWh)</label>
+                    <input type="number" name="electricity" value="{{ form_values.electricity }}" step="any">
+                </div>
+
+                <div>
+                    <label>상수도 사용량(톤)</label>
+                    <input type="number" name="water" value="{{ form_values.water }}" step="any">
+                </div>
+
+                <div>
+                    <label>가스 사용량(m³)</label>
+                    <input type="number" name="gas" value="{{ form_values.gas }}" step="any">
+                </div>
+            </div>
+
+            <button type="submit" name="action" value="diagnose" class="main-btn">
+                입력값으로 진단하기
+            </button>
+        </form>
+    </section>
+
+    <section class="result-grid">
+        <div class="score-card">
+            <p>교육자원 효율 점수</p>
+            <h2>{{ result.scores["교육자원_효율점수"] }}점</h2>
+        </div>
+
+        <div class="score-card danger">
+            <p>종합 비효율 점수</p>
+            <h2>{{ result.scores["종합_비효율점수"] }}점</h2>
+        </div>
+
+        <div class="score-card">
+            <p>비효율 위험등급</p>
+            <h2>{{ result.risk }}</h2>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>2. 비효율 유형 진단</h2>
+
+        <div class="type-box">
+            주요 비효율 유형:
+            <strong>{{ result.main_type }}</strong>
+        </div>
+
+        <div class="mini-grid">
+            <div>
+                <p>에너지 비효율 점수</p>
+                <strong>{{ result.scores["에너지_비효율점수"] }}점</strong>
+            </div>
+
+            <div>
+                <p>공간 과잉 점수</p>
+                <strong>{{ result.scores["공간_과잉점수"] }}점</strong>
+            </div>
+
+            <div>
+                <p>운영 구조 점수</p>
+                <strong>{{ result.scores["운영_구조점수"] }}점</strong>
+            </div>
+        </div>
+
+        <p class="recommend">
+            {{ result.recommendation }}
+        </p>
+    </section>
+
+    <section class="card">
+        <h2>3. 주요 파생변수</h2>
+
+        <table>
+            <tr>
+                <th>지표</th>
+                <th>값</th>
+            </tr>
+
+            {% for item in result.derived_table %}
+            <tr>
+                <td>{{ item.label }}</td>
+                <td>{{ item.value }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </section>
+
+    <section class="card">
+        <h2>4. 유사 지역 비교</h2>
+        <p class="small">
+            입력한 값과 규모가 비슷한 지역을 전체 공공데이터에서 찾은 결과입니다.
+        </p>
+
+        <table>
+            <tr>
+                <th>지역ID</th>
+                <th>교육청</th>
+                <th>구군</th>
+                <th>효율 점수</th>
+                <th>비효율 점수</th>
+                <th>위험등급</th>
+                <th>주요 유형</th>
+            </tr>
+
+            {% for row in result.similar_regions %}
+            <tr>
+                <td>{{ row["지역ID"] }}</td>
+                <td>{{ row["교육청"] }}</td>
+                <td>{{ row["구군"] }}</td>
+                <td>{{ "%.2f"|format(row["교육자원_효율점수"]) }}</td>
+                <td>{{ "%.2f"|format(row["종합_비효율점수"]) }}</td>
+                <td>{{ row["비효율_위험등급"] }}</td>
+                <td>{{ row["주요_비효율유형"] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </section>
+
+    <section class="card">
+        <h2>5. 개선 시나리오 시뮬레이션</h2>
+        <p class="small">
+            입력한 개선 비율을 적용한 뒤, 코랩의 효율 점수 계산 방식을 다시 적용해 점수 변화를 계산합니다.
+        </p>
+
+        <table>
+            <tr>
+                <th>시나리오</th>
+                <th>개선 후 효율 점수</th>
+                <th>점수 개선폭</th>
+            </tr>
+
+            {% for scenario in result.scenario_results %}
+            <tr>
+                <td>{{ scenario.name }}</td>
+                <td>{{ scenario.new_score }}점</td>
+                <td>
+                    {% if scenario.improvement >= 0 %}
+                        +{{ scenario.improvement }}점
+                    {% else %}
+                        {{ scenario.improvement }}점
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <div class="best-box">
+            최우선 개선안은
+            <strong>{{ result.best_scenario.name }}</strong>입니다.
+            예상 개선폭은
+            <strong>
+                {% if result.best_scenario.improvement >= 0 %}
+                    +{{ result.best_scenario.improvement }}점
+                {% else %}
+                    {{ result.best_scenario.improvement }}점
+                {% endif %}
+            </strong>
+            입니다.
+        </div>
+    </section>
+
+</div>
+
+</body>
+</html>
